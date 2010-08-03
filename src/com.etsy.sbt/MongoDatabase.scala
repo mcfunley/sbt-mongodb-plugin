@@ -15,10 +15,10 @@ trait MongoDatabase extends BasicScalaProject {
   def mongoMigrationsDirectory = "." / "migrations"
   def mongoDatabaseName = "tests"
 
-  private val FixtureFile = """([^.]*)\.fixtures.json""".r
+  private val FixtureFile = """([^.]*)\.([^.]*)\.fixtures.json""".r
 
-  def mongoCollectionName(basename : String) : String = basename match {
-    case FixtureFile(name) => name
+  def mongoCollectionName(basename : String) : (String, String) = basename match {
+    case FixtureFile(dbname, name) => (dbname, name)
   }
 
   lazy val mongoFixturePaths = mongoFixturesDirectory ** "*.json"
@@ -58,8 +58,8 @@ trait MongoDatabase extends BasicScalaProject {
     ("mongo etsy %s".format(mongoMigrationPaths.getPaths.reduceLeft(_+" "+_))) ! 
 
   private def loadFixtures = mongoFixturePaths.getPaths.foreach { p =>
-    val cn = mongoCollectionName((new File(p)).getName)
-    ("mongoimport -c %s -d %s --drop %s".format(cn, mongoDatabaseName, p)) ! 
+    val (dbname, cn) = mongoCollectionName((new File(p)).getName)
+    ("mongoimport -c %s -d %s --drop %s".format(cn, dbname, p)) ! 
   }
 
   private lazy val fileNewerThanDB = new SimpleFileFilter(
